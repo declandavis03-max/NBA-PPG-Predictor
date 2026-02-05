@@ -2,7 +2,7 @@
 Built a Python-based NBA Points per Game (ppg) predicator using live web data such as PPG, Defensive Rating (DRtg) from NBA basketball-reference, all while factoring in home and away games.
 
 # Research Question
-Can you build a model that accurately predicts an NBA players points per game on any given night during the NBA season?
+Can there be a model that accurately predicts an NBA players points per game on any given night during the NBA season?
 
 # Data 
     Defensive/Offesnive Team Statistics:
