@@ -43,7 +43,6 @@ Phase 2: Prediction Formula
     2. 
     3. 
 
-    
 # Limitations & Next Steps
 
 
