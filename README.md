@@ -31,8 +31,12 @@ Phase 2: Prediction Formula
         Home: +1 Points
         Away: -1 Points 
 
-    4. 
+    4. Defensive Rating Adjustment:
+        Adjusts the score by comparing opponent's defensive rating compared to league average DRtg, all based on player share of their team's points. 
+        (Opp DRtg - League Avg DRtg) * (Player PPG / Team PPG)
 
+    5. Final Rounded Forecast:
+    Sums the base player's PPG and the DRtg adjustment, as well as Game location to include a final prediction. 
 
 
 
