@@ -36,7 +36,14 @@ Phase 2: Prediction Formula
         (Opp DRtg - League Avg DRtg) * (Player PPG / Team PPG)
 
     5. Final Rounded Forecast:
-    Sums the base player's PPG and the DRtg adjustment, as well as Game location to include a final prediction. 
+    Sums the base player's PPG and the DRtg adjustment, as well as Game location to include a final prediction.
+
+    # Key Insights 
+    1. 
+    2. 
+    3. 
+
+    # Limitations & Next Steps
 
 
 
