@@ -15,6 +15,25 @@ Python | Pandas (pd)
 
 # Approach 
 
+Phase 1: Data Collection and Inputs
+
+    1. In Depth, Live Web Scrpaing:  From basektball reference
+    (Team PPG, Indidiual PPG, Team Defensive Rating)
+   
+    2. Defined User Parameters:
+        Added guided user parameters for the user to provide the model with the players name, 
+        his team (abbreviations if needed via dictionary), and location of the game (Home or Away). 
+
+Phase 2: Prediction Formula
+
+    3. Home Court Factor:
+        Appilies a home court factor on points scored depending on where the selted player is playing.
+        Home: +1 Points
+        Away: -1 Points 
+
+    4. 
+
+
 
 
 
