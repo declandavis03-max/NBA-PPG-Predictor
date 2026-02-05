@@ -37,13 +37,14 @@ Phase 2: Prediction Formula
 
     5. Final Rounded Forecast:
     Sums the base player's PPG and the DRtg adjustment, as well as Game location to include a final prediction.
-
-    # Key Insights 
+    
+# Key Insights 
     1. 
     2. 
     3. 
 
-    # Limitations & Next Steps
+    
+# Limitations & Next Steps
 
 
 
