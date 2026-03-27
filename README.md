@@ -17,7 +17,7 @@ Python | Pandas (pd)
 
 Phase 1: Data Collection and Inputs
 
-    1. In Depth, Live Web Scrpaing:  From basektball reference
+    1. In Depth, Live Web Scraping:  From basektball reference
     (Team PPG, Indidiual PPG, Team Defensive Rating)
    
     2. Defined User Parameters:
