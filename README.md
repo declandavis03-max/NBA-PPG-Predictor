@@ -1,6 +1,14 @@
 # NBA-PPG-Predictor
 Built a Python-based NBA Points per Game (ppg) predicator using live web data such as PPG, Defensive Rating (DRtg) from NBA basketball-reference, all while factoring location of the game.
 
+## Table of Contents
+
+- [Research Question](#Research-Question)
+- [Data](#Data)
+- [Tools Used](#tools-used)
+- [Approach](#Approach)
+- [Overall Insights](#Overall-Insights)
+
 # Research Question
 Can there be a model that accurately predicts an NBA players points per game on any given night during the NBA season?
 
