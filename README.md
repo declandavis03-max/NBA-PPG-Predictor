@@ -61,7 +61,7 @@ Tools Used
 
         Abbreviations Below:
 
-        ![Abbrev Dictionary](images/Abbrev_dictionary.png)
+       <img src="images/Abbrev_dictionary.png" width="700">
         
 
     2.  In Depth, Live Web Scraping:  From basektball reference
