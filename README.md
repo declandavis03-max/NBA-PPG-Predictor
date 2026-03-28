@@ -80,7 +80,7 @@ Tools Used
     2. 
     3. 
 
-# Limitations & Next Steps
+# Limitations and Next Steps
 
 
 
