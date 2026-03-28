@@ -8,7 +8,7 @@ Built a Python-based NBA Points per Game (ppg) predicator using live web data su
 - [Website Used for Data](#Websites-Used-for-Data)
 - [Creation of Formula](#Creation-of-Formula)
 - [Overall Takeaways](#Overall-Takeaways)
-- [Limitations and Next Steps](Limitations-and-Next-Steps)
+- [Limitations and Next Steps](#Limitations-and-Next-Steps)
 
 # Research Question
 Using online data from Sports Reference, Can there be a model that accurately predicts an NBA players points per game on any given night during the NBA season?
