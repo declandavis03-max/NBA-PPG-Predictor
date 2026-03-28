@@ -71,8 +71,8 @@ Tools Used
     (Team PPG, Indidiual PPG, Team Defensive Rating)
 
     3. Finished Result
+![Example Test](images/example_test.png)
 
-# Testing
     
 # Key Insights 
     1. 
