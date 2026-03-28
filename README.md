@@ -62,12 +62,15 @@ Tools Used
         Abbreviations Below:
 
 ![Abbrev Dictionary](images/Abbrev_dictionary.png)
+
+        Main Function within Code with Input for Paramters:
+![Main Function](images/main_function.png)
         
 
     2.  In Depth, Live Web Scraping:  From basektball reference
     (Team PPG, Indidiual PPG, Team Defensive Rating)
 
-    3. 
+    3. Finished Result
 
 # Testing
     
