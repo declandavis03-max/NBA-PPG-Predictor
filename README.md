@@ -5,8 +5,8 @@ Built a Python-based NBA Points per Game (ppg) predicator using live web data su
 
 - [Research Question](#Research-Question)
 - [ Data Pipeline and Data](#Data-Pipeline-and-Data)
-- [Tools Used](#tools-used)
-- [Approach](#Approach)
+- [Website Used for Data](#Websites-Used-for-Data)
+- [Creation of Formula](#Creation-of-Formula)
 - [Overall Insights](#Overall-Insights)
 
 # Research Question
@@ -18,7 +18,7 @@ Using online data from Sports Reference, Can there be a model that accurately pr
 WIth Sports Reference Data, the goal is create a points per game predictor using these steps
 
 ```
-Websites Used for Data --> Creation of Forumla --> Data Collection and Building Functions --> Testing --> Overall Insights
+Websites Used for Data --> Creation of Forumla --> Data Collection and Building Functions --> --> Overall Insights
 ```
 
 ### Websites Used for Data
