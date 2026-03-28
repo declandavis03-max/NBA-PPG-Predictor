@@ -59,6 +59,11 @@ Tools Used
         Added guided user parameters for the user to provide the model with the players name, 
         his team (abbreviations if needed via dictionary), and location of the game (Home or Away). 
 
+        Abbreviations Below:
+
+        ![Abbrev Dictionary](images/Abbrev_dictionary.png)
+        
+
     2.  In Depth, Live Web Scraping:  From basektball reference
     (Team PPG, Indidiual PPG, Team Defensive Rating)
 
