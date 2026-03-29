@@ -9,6 +9,7 @@ Built a Python-based NBA Points per Game (ppg) predicator using live web data su
 - [Creation of Formula](#Creation-of-Formula)
 - [Overall Takeaways](#Overall-Takeaways)
 - [Limitations and Next Steps](#Limitations-and-Next-Steps)
+- [Final Statement](#Final-Statement)
 
 # Research Question
 Using online data from Sports Reference, Can there be a model that accurately predicts an NBA players points per game on any given night during the NBA season?
@@ -76,11 +77,42 @@ Tools Used
 
     
 # Overall Takeaways 
-    1. 
-    2. 
-    3. 
+    1.Context > Raw Metrics
 
-# Limitations and Next Steps
+While Defensive Rating and proportional scoring share significantly influence predicted PPG, they do not fully capture real-world performance. Player output is heavily dependent on context such as:
+
+    - Usage rate
+    - Game pace
+    - Matchup-specific defensive schemes
+    - Teammate availability
+**Key insight: Quantitative metrics alone are insufficient without situational context.**
+
+    2. Model Simplicity vs. Real-World Complexity
+
+The model demonstrates that a relatively simple formula using (Player PPG, Team PPG, Team DRtg, can generate reasonable directional predictions. However, basketball performance is non-linear and dynamic, meaning:
+    - Small inputs can have unpredictable effects
+    - External variables (fatigue, injuries, rotations) are not captured
+    
+**Key insight: Simple models are useful for baseline predictions, but struggle with real-world variability.**
+
+    3. Value of Modular Code Design
+Breaking the project into modular Python functions --> Improved readability, Made debugging easier, Allowed for flexible updates to the model
+
+**Key insight: The proces of building modular functions has been very benefiical for my overall experience on the project**
+
+# Limitations 
+- Limited Feature Set:
+The model only incorporates a small number of variables (PPG, Team PPG, Defensive Rating, and location). Key metrics such as usage rate, effective field goal percentage (eFG%), and minutes played are not included, which limits predictive accuracy.
+
+- Web Scraping Reliability:
+The model depends on live data scraping from Basketball Reference. Any changes to the website structure or delays in data updates can break the pipeline or introduce inconsistencies.
+
+- Small Sample Bias (Per-Game Stats):
+Per-game statistics can be misleading, especially for players with limited minutes or small sample sizes, leading to unstable or inflated predictions.
+
+# Final Statement
+
+While the model provides a structured approach to predicting PPG, it highlights that basketball performance is influenced by a wide range of dynamic and contextual factors that extend beyond basic statistical inputs. Additionally, this project served as my first experience building modular functions in Python, and was a great introduction to how powerful and flexible Python can be for data analysis and modeling.
 
 
 
