@@ -7,6 +7,7 @@ Built a Python-based NBA Points per Game (ppg) predicator using live web data su
 - [ Data Pipeline and Data](#Data-Pipeline-and-Data)
 - [Website Used for Data](#Websites-Used-for-Data)
 - [Creation of Formula](#Creation-of-Formula)
+- [Example Prediction](#Example-Prediction)
 - [Overall Takeaways](#Overall-Takeaways)
 - [Limitations and Next Steps](#Limitations-and-Next-Steps)
 - [Final Statement](#Final-Statement)
@@ -72,7 +73,7 @@ Tools Used
     2.  In Depth, Live Web Scraping:  From basektball reference
     (Team PPG, Indidiual PPG, Team Defensive Rating)
 
-    3. Finished Result
+## Example Prediction
 ![Example Test](images/example_test.png)
 
     
