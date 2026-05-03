@@ -3,9 +3,9 @@ NBA Points Predictor — Streamlit App
 Original logic by Declan Davis (@declandavis03-max)
 """
 
-import requests
 import streamlit as st
 import pandas as pd
+from nba_api.stats.endpoints import leaguedashplayerstats, leaguedashteamstats
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -109,9 +109,7 @@ h2, h3 {
 </style>
 """, unsafe_allow_html=True)
 
-# ── Data URLs ──────────────────────────────────────────────────────────────────
-DEF_RAT_URL = "https://www.basketball-reference.com/leagues/NBA_2026.html"
-PPG_URL     = "https://www.basketball-reference.com/leagues/NBA_2026_per_game.html"
+SEASON = "2025-26"
 
 TEAM_ABBREVIATIONS = {
     "Atlanta Hawks": "ATL", "Boston Celtics": "BOS", "Brooklyn Nets": "BKN",
@@ -128,72 +126,63 @@ TEAM_ABBREVIATIONS = {
 ABBREV_TO_TEAM = {v: k for k, v in TEAM_ABBREVIATIONS.items()}
 ALL_ABBREVS    = sorted(TEAM_ABBREVIATIONS.values())
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.5",
-}
-
-# ── HTML fetcher ───────────────────────────────────────────────────────────────
-def fetch_html(url):
-    r = requests.get(url, headers=HEADERS, timeout=15)
-    return r.content
-
 # ── Cached data fetchers ───────────────────────────────────────────────────────
 @st.cache_data(show_spinner=False)
-def fetch_ppg_table():
-    return pd.read_html(fetch_html(PPG_URL))[0]
+def fetch_player_stats():
+    df = leaguedashplayerstats.LeagueDashPlayerStats(
+        season=SEASON,
+        per_mode_simple="PerGame"
+    ).get_data_frames()[0]
+    return df
 
 @st.cache_data(show_spinner=False)
-def fetch_def_rat_table():
-    tables = pd.read_html(fetch_html(DEF_RAT_URL))
-    df = tables[10]
-    try:
-        df.columns = df.columns.get_level_values(-1)
-    except Exception:
-        pass
+def fetch_team_stats():
+    df = leaguedashteamstats.LeagueDashTeamStats(
+        season=SEASON,
+        per_mode_simple="PerGame"
+    ).get_data_frames()[0]
+    return df
+
+@st.cache_data(show_spinner=False)
+def fetch_team_defense():
+    df = leaguedashteamstats.LeagueDashTeamStats(
+        season=SEASON,
+        per_mode_simple="PerGame",
+        measure_type_simple="Defense"
+    ).get_data_frames()[0]
     return df
 
 @st.cache_data(show_spinner=False)
 def get_player_list():
-    df = fetch_ppg_table()
-    df = df[df["Rk"] != "Rk"]
-    return sorted(df["Player"].dropna().unique().tolist())
+    df = fetch_player_stats()
+    return sorted(df["PLAYER_NAME"].dropna().unique().tolist())
 
 # ── Core logic ─────────────────────────────────────────────────────────────────
-def league_avg_drtg():
-    df = fetch_def_rat_table()
-    df = df[df["Rk"] != "Rk"]
-    row = df[df["Team"] == "League Average"]
-    return float(list(row["DRtg"])[0])
-
-def player_ppg(player_name):
-    df = fetch_ppg_table()
-    df = df[df["Rk"] != "Rk"]
-    df["PTS"] = df["PTS"].astype(float)
-    row = df[df["Player"] == player_name]
+def get_player_ppg(player_name):
+    df = fetch_player_stats()
+    row = df[df["PLAYER_NAME"] == player_name]
     if len(row) == 0:
         raise ValueError(f"Player '{player_name}' not found.")
-    return float(list(row["PTS"])[0])
+    return float(row["PTS"].values[0])
 
-def team_ppg(team_abbrev):
-    df = fetch_ppg_table()
-    df = df[df["Rk"] != "Rk"]
-    df["PTS"] = df["PTS"].astype(float)
-    row = df[df["Team"] == team_abbrev.upper()]
+def get_team_ppg(team_abbrev):
+    df = fetch_team_stats()
+    row = df[df["TEAM_ABBREVIATION"] == team_abbrev.upper()]
     if len(row) == 0:
         raise ValueError(f"Team '{team_abbrev}' not found.")
-    return float(list(row["PTS"])[0])
+    return float(row["PTS"].values[0])
 
-def opponent_drtg(team_abbrev):
-    full_name = ABBREV_TO_TEAM.get(team_abbrev.upper(), team_abbrev)
-    df = fetch_def_rat_table()
-    df = df[df["Rk"] != "Rk"]
-    df["DRtg"] = df["DRtg"].astype(float)
-    row = df[df["Team"] == full_name]
+def get_opp_drtg(team_abbrev):
+    df = fetch_team_defense()
+    row = df[df["TEAM_ABBREVIATION"] == team_abbrev.upper()]
     if len(row) == 0:
-        raise ValueError(f"Team '{full_name}' not found in DRtg table.")
-    return float(list(row["DRtg"])[0])
+        raise ValueError(f"Team '{team_abbrev}' not found in defense table.")
+    # OPP_PTS is points allowed per game — use as defensive proxy
+    return float(row["OPP_PTS"].values[0])
+
+def get_league_avg_drtg():
+    df = fetch_team_defense()
+    return float(df["OPP_PTS"].mean())
 
 def scoring_adj(ppg, t_ppg, opp_drtg, lg_drtg):
     return (ppg / t_ppg) * (opp_drtg - lg_drtg)
@@ -203,7 +192,7 @@ def location_adj(is_home):
 
 # ── Header ─────────────────────────────────────────────────────────────────────
 st.markdown("<h1>🏀 NBA Points Predictor</h1>", unsafe_allow_html=True)
-st.markdown('<p class="subtitle">2025–26 Season · Basketball-Reference Data</p>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle">2025–26 Season · Official NBA Data</p>', unsafe_allow_html=True)
 st.markdown('<hr class="court-divider">', unsafe_allow_html=True)
 
 # ── Inputs ─────────────────────────────────────────────────────────────────────
@@ -221,7 +210,7 @@ with col1:
     if player_list:
         player = st.selectbox("Select Player", player_list, index=None, placeholder="Search player…")
     else:
-        player = st.text_input("Player Name (exact)", placeholder="e.g. Nikola Jokić")
+        player = st.text_input("Player Name (exact)", placeholder="e.g. Nikola Jokic")
 
     player_team = st.selectbox("Player's Team", ALL_ABBREVS, index=None, placeholder="Select team…")
 
@@ -240,12 +229,12 @@ if run:
         st.warning("Please fill in all fields before predicting.")
     else:
         is_home = location.startswith("Home")
-        with st.spinner("Crunching numbers from Basketball-Reference…"):
+        with st.spinner("Crunching numbers from NBA.com…"):
             try:
-                ppg      = player_ppg(player)
-                t_ppg    = team_ppg(player_team)
-                opp_drtg = opponent_drtg(opponent)
-                lg_drtg  = league_avg_drtg()
+                ppg      = get_player_ppg(player)
+                t_ppg    = get_team_ppg(player_team)
+                opp_drtg = get_opp_drtg(opponent)
+                lg_drtg  = get_league_avg_drtg()
                 def_adj  = scoring_adj(ppg, t_ppg, opp_drtg, lg_drtg)
                 loc_adj  = location_adj(is_home)
                 predicted = ppg + def_adj + loc_adj
@@ -267,7 +256,7 @@ if run:
                         <span class="val">{ppg:.1f}</span>
                     </div>
                     <div class="breakdown-row">
-                        <span class="label">Defensive Adjustment <small>({opp_full} DRtg: {opp_drtg:.1f} | League: {lg_drtg:.1f})</small></span>
+                        <span class="label">Defensive Adjustment <small>({opp_full} Opp PPG: {opp_drtg:.1f} | League Avg: {lg_drtg:.1f})</small></span>
                         <span class="val">{fmt_signed(def_adj)}</span>
                     </div>
                     <div class="breakdown-row">
@@ -285,8 +274,8 @@ if run:
 # ── Footer ─────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="info-box">
-    <strong>How it works:</strong> Base PPG is adjusted by the opponent's Defensive Rating relative to the league average,
+    <strong>How it works:</strong> Base PPG is adjusted by the opponent's points allowed per game relative to the league average,
     weighted by the player's scoring share of their team's output. A +1 / −1 home/away modifier is then applied.
-    Data is fetched live from Basketball-Reference.
+    Data is fetched live from NBA.com.
 </div>
 """, unsafe_allow_html=True)
