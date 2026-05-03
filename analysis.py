@@ -131,7 +131,7 @@ ALL_ABBREVS    = sorted(TEAM_ABBREVIATIONS.values())
 def fetch_player_stats():
     df = leaguedashplayerstats.LeagueDashPlayerStats(
         season=SEASON,
-        per_mode_simple="PerGame"
+        per_mode_detailed="PerGame"
     ).get_data_frames()[0]
     return df
 
@@ -139,7 +139,7 @@ def fetch_player_stats():
 def fetch_team_stats():
     df = leaguedashteamstats.LeagueDashTeamStats(
         season=SEASON,
-        per_mode_simple="PerGame"
+        per_mode_detailed="PerGame"
     ).get_data_frames()[0]
     return df
 
@@ -147,8 +147,8 @@ def fetch_team_stats():
 def fetch_team_defense():
     df = leaguedashteamstats.LeagueDashTeamStats(
         season=SEASON,
-        per_mode_simple="PerGame",
-        measure_type_simple="Defense"
+        per_mode_detailed="PerGame",
+        measure_type_detailed_defense="Defense"
     ).get_data_frames()[0]
     return df
 
