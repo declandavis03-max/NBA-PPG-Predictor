@@ -6,7 +6,6 @@ Original logic by Declan Davis (@declandavis03-max)
 import streamlit as st
 import pandas as pd
 
-
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="NBA Points Predictor",
@@ -142,12 +141,12 @@ ALL_ABBREVS    = sorted(TEAM_ABBREVIATIONS.values())
 # ── Cached data fetchers ───────────────────────────────────────────────────────
 @st.cache_data(show_spinner=False)
 def fetch_ppg_table():
-    tables = pd.read_html(PPG_URL)
+    tables = pd.read_html(PPG_URL, flavor="html5lib")
     return tables[0]
 
 @st.cache_data(show_spinner=False)
 def fetch_def_rat_table():
-    tables = pd.read_html(DEF_RAT_URL)
+    tables = pd.read_html(DEF_RAT_URL, flavor="html5lib")
     df = tables[10]
     try:
         df.columns = df.columns.get_level_values(-1)
