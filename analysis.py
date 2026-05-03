@@ -3,6 +3,7 @@ NBA Points Predictor — Streamlit App
 Original logic by Declan Davis (@declandavis03-max)
 """
 
+import urllib.request
 import streamlit as st
 import pandas as pd
 
@@ -23,7 +24,6 @@ html, body, [class*="css"] {
     background-color: #0d0d0d;
     color: #f0f0f0;
 }
-
 h1 {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 3.2rem !important;
@@ -31,13 +31,11 @@ h1 {
     color: #f77f00;
     margin-bottom: 0 !important;
 }
-
 h2, h3 {
     font-family: 'Bebas Neue', sans-serif;
     letter-spacing: 2px;
     color: #f77f00;
 }
-
 .subtitle {
     color: #888;
     font-size: 0.9rem;
@@ -46,7 +44,6 @@ h2, h3 {
     letter-spacing: 1px;
     text-transform: uppercase;
 }
-
 .stButton > button {
     background: #f77f00;
     color: #0d0d0d;
@@ -63,7 +60,6 @@ h2, h3 {
     background: #ff9d2f;
     color: #0d0d0d;
 }
-
 .result-card {
     background: #1a1a1a;
     border-left: 4px solid #f77f00;
@@ -71,7 +67,6 @@ h2, h3 {
     padding: 24px 28px;
     margin-top: 20px;
 }
-
 .result-card .big-number {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 5rem;
@@ -79,7 +74,6 @@ h2, h3 {
     line-height: 1;
     margin-bottom: 4px;
 }
-
 .result-card .big-label {
     font-size: 0.8rem;
     text-transform: uppercase;
@@ -87,7 +81,6 @@ h2, h3 {
     color: #888;
     margin-bottom: 20px;
 }
-
 .breakdown-row {
     display: flex;
     justify-content: space-between;
@@ -95,18 +88,15 @@ h2, h3 {
     padding: 10px 0;
     font-size: 0.9rem;
 }
-
 .breakdown-row .label { color: #aaa; }
 .breakdown-row .val   { font-weight: 600; color: #f0f0f0; }
 .pos { color: #4ade80 !important; }
 .neg { color: #f87171 !important; }
-
 .court-divider {
     border: none;
     border-top: 1px solid #2a2a2a;
     margin: 28px 0;
 }
-
 .info-box {
     background: #161616;
     border: 1px solid #2a2a2a;
@@ -138,15 +128,20 @@ TEAM_ABBREVIATIONS = {
 ABBREV_TO_TEAM = {v: k for k, v in TEAM_ABBREVIATIONS.items()}
 ALL_ABBREVS    = sorted(TEAM_ABBREVIATIONS.values())
 
+# ── HTML fetcher (no lxml/html5lib needed) ─────────────────────────────────────
+def fetch_html(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req) as r:
+        return r.read()
+
 # ── Cached data fetchers ───────────────────────────────────────────────────────
 @st.cache_data(show_spinner=False)
 def fetch_ppg_table():
-    tables = pd.read_html(PPG_URL, flavor="html5lib")
-    return tables[0]
+    return pd.read_html(fetch_html(PPG_URL))[0]
 
 @st.cache_data(show_spinner=False)
 def fetch_def_rat_table():
-    tables = pd.read_html(DEF_RAT_URL, flavor="html5lib")
+    tables = pd.read_html(fetch_html(DEF_RAT_URL))
     df = tables[10]
     try:
         df.columns = df.columns.get_level_values(-1)
@@ -186,8 +181,7 @@ def team_ppg(team_abbrev):
     return float(list(row["PTS"])[0])
 
 def opponent_drtg(team_abbrev):
-    upper = team_abbrev.upper()
-    full_name = ABBREV_TO_TEAM.get(upper, upper)
+    full_name = ABBREV_TO_TEAM.get(team_abbrev.upper(), team_abbrev)
     df = fetch_def_rat_table()
     df = df[df["Rk"] != "Rk"]
     df["DRtg"] = df["DRtg"].astype(float)
@@ -197,17 +191,14 @@ def opponent_drtg(team_abbrev):
     return float(list(row["DRtg"])[0])
 
 def scoring_adj(ppg, t_ppg, opp_drtg, lg_drtg):
-    drtg_diff   = opp_drtg - lg_drtg
-    share       = ppg / t_ppg
-    return share * drtg_diff
+    return (ppg / t_ppg) * (opp_drtg - lg_drtg)
 
-def location_adj(is_home: bool):
+def location_adj(is_home):
     return 1.0 if is_home else -1.0
 
 # ── Header ─────────────────────────────────────────────────────────────────────
 st.markdown("<h1>🏀 NBA Points Predictor</h1>", unsafe_allow_html=True)
 st.markdown('<p class="subtitle">2025–26 Season · Basketball-Reference Data</p>', unsafe_allow_html=True)
-
 st.markdown('<hr class="court-divider">', unsafe_allow_html=True)
 
 # ── Inputs ─────────────────────────────────────────────────────────────────────
@@ -250,7 +241,6 @@ if run:
                 t_ppg    = team_ppg(player_team)
                 opp_drtg = opponent_drtg(opponent)
                 lg_drtg  = league_avg_drtg()
-
                 def_adj  = scoring_adj(ppg, t_ppg, opp_drtg, lg_drtg)
                 loc_adj  = location_adj(is_home)
                 predicted = ppg + def_adj + loc_adj
@@ -260,15 +250,13 @@ if run:
                     klass = "pos" if v >= 0 else "neg"
                     return f'<span class="{klass}">{sign}{v:.2f}</span>'
 
-                opp_full   = ABBREV_TO_TEAM.get(opponent.upper(), opponent)
-                team_full  = ABBREV_TO_TEAM.get(player_team.upper(), player_team)
-                loc_label  = "Home" if is_home else "Away"
+                opp_full  = ABBREV_TO_TEAM.get(opponent.upper(), opponent)
+                loc_label = "Home" if is_home else "Away"
 
                 st.markdown(f"""
                 <div class="result-card">
                     <div class="big-number">{round(predicted)}</div>
                     <div class="big-label">Predicted Points — {player} vs {opp_full} ({loc_label})</div>
-
                     <div class="breakdown-row">
                         <span class="label">Base PPG</span>
                         <span class="val">{ppg:.1f}</span>
@@ -289,7 +277,7 @@ if run:
             except Exception as e:
                 st.error(f"Something went wrong: {e}")
 
-# ── Footer info ────────────────────────────────────────────────────────────────
+# ── Footer ─────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="info-box">
     <strong>How it works:</strong> Base PPG is adjusted by the opponent's Defensive Rating relative to the league average,
