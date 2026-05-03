@@ -2,7 +2,6 @@
 NBA Points Predictor — Streamlit App
 Original logic by Declan Davis (@declandavis03-max)
 """
-
 import urllib.request
 import streamlit as st
 import pandas as pd
