@@ -1,238 +1,299 @@
-# -*- coding: utf-8 -*-
 """
-Created on Fri Dec  5 22:29:16 2025
-
-@author: decla
+NBA Points Predictor — Streamlit App
+Original logic by Declan Davis (@declandavis03-max)
 """
 
-# -*- coding: utf-8 -*-
-"""
-NBA Points Predictor
-"""
-
+import streamlit as st
 import pandas as pd
 
-# URLs
-defRatURL = "https://www.basketball-reference.com/leagues/NBA_2026.html"
-ppgURL = "https://www.basketball-reference.com/leagues/NBA_2026_per_game.html"
+# ── Page config ────────────────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="NBA Points Predictor",
+    page_icon="🏀",
+    layout="centered",
+)
 
-# Team full-name → abbreviation
-TEAM_ABBREVIATIONS = {
-    "Atlanta Hawks": "ATL",
-    "Boston Celtics": "BOS",
-    "Brooklyn Nets": "BKN",
-    "Charlotte Hornets": "CHA",
-    "Chicago Bulls": "CHI",
-    "Cleveland Cavaliers": "CLE",
-    "Dallas Mavericks": "DAL",
-    "Denver Nuggets": "DEN",
-    "Detroit Pistons": "DET",
-    "Golden State Warriors": "GSW",
-    "Houston Rockets": "HOU",
-    "Indiana Pacers": "IND",
-    "Los Angeles Clippers": "LAC",
-    "Los Angeles Lakers": "LAL",
-    "Memphis Grizzlies": "MEM",
-    "Miami Heat": "MIA",
-    "Milwaukee Bucks": "MIL",
-    "Minnesota Timberwolves": "MIN",
-    "New Orleans Pelicans": "NOP",
-    "New York Knicks": "NYK",
-    "Oklahoma City Thunder": "OKC",
-    "Orlando Magic": "ORL",
-    "Philadelphia 76ers": "PHI",
-    "Phoenix Suns": "PHX",
-    "Portland Trail Blazers": "POR",
-    "Sacramento Kings": "SAC",
-    "San Antonio Spurs": "SAS",
-    "Toronto Raptors": "TOR",
-    "Utah Jazz": "UTA",
-    "Washington Wizards": "WAS",
+# ── Custom CSS ─────────────────────────────────────────────────────────────────
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'DM Sans', sans-serif;
+    background-color: #0d0d0d;
+    color: #f0f0f0;
 }
 
-# Abbrev → full team name. Allows for easy access to teams abbrev when typed
-ABBREV_TO_TEAM = {abbr: name for name, abbr in TEAM_ABBREVIATIONS.items()}
+h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3.2rem !important;
+    letter-spacing: 3px;
+    color: #f77f00;
+    margin-bottom: 0 !important;
+}
 
+h2, h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 2px;
+    color: #f77f00;
+}
 
-def leagueAvgDRtg(): #Finds League AVG DRtg (Compare with Opp one)
-    """Return the league average defensive rating (DRtg) as a number."""
-    tables = pd.read_html(defRatURL) # Reads URL
-    df = tables[10]  # table with team ratings
+.subtitle {
+    color: #888;
+    font-size: 0.9rem;
+    margin-top: -6px;
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
 
-    # Try to flatten multi-level columns (if they exist- do for DRtg one (Advanced Stats))
-    try:
-        df.columns = df.columns.get_level_values(-1)
-    except Exception:
-        pass
+.stButton > button {
+    background: #f77f00;
+    color: #0d0d0d;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    border: none;
+    border-radius: 4px;
+    padding: 0.55rem 2.5rem;
+    width: 100%;
+    transition: background 0.2s;
+}
+.stButton > button:hover {
+    background: #ff9d2f;
+    color: #0d0d0d;
+}
 
-    # Remove repeated header rows
-    df = df[df["Rk"] != "Rk"]
+.result-card {
+    background: #1a1a1a;
+    border-left: 4px solid #f77f00;
+    border-radius: 6px;
+    padding: 24px 28px;
+    margin-top: 20px;
+}
 
-    # Keeps only the row where Team == "League Average"
-    league_row = df[df["Team"] == "League Average"]
+.result-card .big-number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 5rem;
+    color: #f77f00;
+    line-height: 1;
+    margin-bottom: 4px;
+}
 
-    drtg_series = league_row["DRtg"] # Assigns league rows DRtg
+.result-card .big-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #888;
+    margin-bottom: 20px;
+}
 
-    drtg_value = float(list(drtg_series)[0]) #Finds first and only index of AvgDRtg 
-    return drtg_value
+.breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #2a2a2a;
+    padding: 10px 0;
+    font-size: 0.9rem;
+}
 
+.breakdown-row .label { color: #aaa; }
+.breakdown-row .val   { font-weight: 600; color: #f0f0f0; }
+.pos { color: #4ade80 !important; }
+.neg { color: #f87171 !important; }
 
-def playerPPG(player_name):
-    """Return this player's PPG as a number."""
-    tables = pd.read_html(ppgURL)
-    df = tables[0]  # player per-game stats
+.court-divider {
+    border: none;
+    border-top: 1px solid #2a2a2a;
+    margin: 28px 0;
+}
 
-    # Remove repeated header rows
-    df = df[df["Rk"] != "Rk"]
+.info-box {
+    background: #161616;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    padding: 14px 18px;
+    font-size: 0.82rem;
+    color: #777;
+    margin-top: 12px;
+}
+</style>
+""", unsafe_allow_html=True)
 
-    # Make PTS numeric
-    df["PTS"] = df["PTS"].astype(float)
+# ── Data URLs ──────────────────────────────────────────────────────────────────
+DEF_RAT_URL = "https://www.basketball-reference.com/leagues/NBA_2026.html"
+PPG_URL     = "https://www.basketball-reference.com/leagues/NBA_2026_per_game.html"
 
-    # Find the row for this player
-    row = df[df["Player"] == player_name]
+TEAM_ABBREVIATIONS = {
+    "Atlanta Hawks": "ATL", "Boston Celtics": "BOS", "Brooklyn Nets": "BKN",
+    "Charlotte Hornets": "CHA", "Chicago Bulls": "CHI", "Cleveland Cavaliers": "CLE",
+    "Dallas Mavericks": "DAL", "Denver Nuggets": "DEN", "Detroit Pistons": "DET",
+    "Golden State Warriors": "GSW", "Houston Rockets": "HOU", "Indiana Pacers": "IND",
+    "Los Angeles Clippers": "LAC", "Los Angeles Lakers": "LAL", "Memphis Grizzlies": "MEM",
+    "Miami Heat": "MIA", "Milwaukee Bucks": "MIL", "Minnesota Timberwolves": "MIN",
+    "New Orleans Pelicans": "NOP", "New York Knicks": "NYK", "Oklahoma City Thunder": "OKC",
+    "Orlando Magic": "ORL", "Philadelphia 76ers": "PHI", "Phoenix Suns": "PHX",
+    "Portland Trail Blazers": "POR", "Sacramento Kings": "SAC", "San Antonio Spurs": "SAS",
+    "Toronto Raptors": "TOR", "Utah Jazz": "UTA", "Washington Wizards": "WAS",
+}
+ABBREV_TO_TEAM = {v: k for k, v in TEAM_ABBREVIATIONS.items()}
+ALL_ABBREVS    = sorted(TEAM_ABBREVIATIONS.values())
 
-    #If players are not found, show them some player recs
-    if len(row) == 0:
-        print("\nPlayer '{}' not found.".format(player_name))
-        print("Here are some sample player names:\n")
-        print(df["Player"].head(20))
-        raise SystemExit()
+# ── Cached data fetchers ───────────────────────────────────────────────────────
+@st.cache_data(show_spinner=False)
+def fetch_ppg_table():
+    tables = pd.read_html(PPG_URL)
+    return tables[0]
 
-    # Puts ppg into a list with player name, then returns PPG value
-    pts_series = row["PTS"]
-    ppg_value = float(list(pts_series)[0])
-
-    return ppg_value
-
-
-def teamPPG(team_abbrev):
-    """Return this team's PPG as a number, using team abbreviation (e.g. MIN, BOS)."""
-    team_abbrev = team_abbrev.upper()
-
-    tables = pd.read_html(ppgURL)
-
-    # Find the table that has Team and PTS columns (this one uses abbrevs)
-    df = None # Havenot found table
-    for numberOftable in tables: # loop every table until team and pts found
-        if "Team" in numberOftable.columns and "PTS" in numberOftable.columns:
-            df = numberOftable
-            break
- 
-    if df is None:# if cant find table
-        print("No table with Team and PTS found on the per-game page.")
-        raise SystemExit()
-
-    # Remove repeated header rows
-    if "Rk" in df.columns:
-        df = df[df["Rk"] != "Rk"]
-
-    df["PTS"] = df["PTS"].astype(float) # Converts pts to #
-
-    # Team column holds abbrevs like MIN, BOS, NOP, etc.
-    row = df[df["Team"] == team_abbrev]
-    
-    # If cant find ABBREV, RESET
-    if len(row) == 0:
-        print("\nTeam abbreviation '{}' not found in team PPG table.".format(team_abbrev))
-        print("Valid team abbreviations from this table:\n")
-        print(sorted(df["Team"].astype(str).unique()))
-        raise SystemExit()
-
-    pts_series = row["PTS"]
-    team_ppg_value = float(list(pts_series)[0])
-
-    return team_ppg_value
-
-
-def opponentDRtg(team_name):
-    """Return this opponent's DRtg as a number."""
-    upper_name = team_name.upper() #Uppercase letters
-
-    # Convert abbreviation to full name if needed
-    if upper_name in ABBREV_TO_TEAM:
-        team_name = ABBREV_TO_TEAM[upper_name]
-    else:
-        team_name = team_name  # assume they typed full name
-
-    tables = pd.read_html(defRatURL)
+@st.cache_data(show_spinner=False)
+def fetch_def_rat_table():
+    tables = pd.read_html(DEF_RAT_URL)
     df = tables[10]
-
-    # Try to flatten multi-level columns if needed
     try:
         df.columns = df.columns.get_level_values(-1)
     except Exception:
         pass
+    return df
 
+@st.cache_data(show_spinner=False)
+def get_player_list():
+    df = fetch_ppg_table()
+    df = df[df["Rk"] != "Rk"]
+    return sorted(df["Player"].dropna().unique().tolist())
+
+# ── Core logic ─────────────────────────────────────────────────────────────────
+def league_avg_drtg():
+    df = fetch_def_rat_table()
+    df = df[df["Rk"] != "Rk"]
+    row = df[df["Team"] == "League Average"]
+    return float(list(row["DRtg"])[0])
+
+def player_ppg(player_name):
+    df = fetch_ppg_table()
+    df = df[df["Rk"] != "Rk"]
+    df["PTS"] = df["PTS"].astype(float)
+    row = df[df["Player"] == player_name]
+    if len(row) == 0:
+        raise ValueError(f"Player '{player_name}' not found.")
+    return float(list(row["PTS"])[0])
+
+def team_ppg(team_abbrev):
+    df = fetch_ppg_table()
+    df = df[df["Rk"] != "Rk"]
+    df["PTS"] = df["PTS"].astype(float)
+    row = df[df["Team"] == team_abbrev.upper()]
+    if len(row) == 0:
+        raise ValueError(f"Team '{team_abbrev}' not found.")
+    return float(list(row["PTS"])[0])
+
+def opponent_drtg(team_abbrev):
+    upper = team_abbrev.upper()
+    full_name = ABBREV_TO_TEAM.get(upper, upper)
+    df = fetch_def_rat_table()
     df = df[df["Rk"] != "Rk"]
     df["DRtg"] = df["DRtg"].astype(float)
-
-    row = df[df["Team"] == team_name]
-
+    row = df[df["Team"] == full_name]
     if len(row) == 0:
-        print("\nTeam '{}' not found in DRtg table.".format(team_name))
-        print("Valid team names from this table:\n")
-        print(sorted(df["Team"].astype(str).unique()))
-        raise SystemExit()
+        raise ValueError(f"Team '{full_name}' not found in DRtg table.")
+    return float(list(row["DRtg"])[0])
 
-    drtg_series = row["DRtg"]
-    opp_drtg_value = float(list(drtg_series)[0])
+def scoring_adj(ppg, t_ppg, opp_drtg, lg_drtg):
+    drtg_diff   = opp_drtg - lg_drtg
+    share       = ppg / t_ppg
+    return share * drtg_diff
 
-    return opp_drtg_value
+def location_adj(is_home: bool):
+    return 1.0 if is_home else -1.0
 
+# ── Header ─────────────────────────────────────────────────────────────────────
+st.markdown("<h1>🏀 NBA Points Predictor</h1>", unsafe_allow_html=True)
+st.markdown('<p class="subtitle">2025–26 Season · Basketball-Reference Data</p>', unsafe_allow_html=True)
 
-def scoringAdj(player_ppg, team_ppg, opp_drtg, league_avg_drtg):
-    """
-    Adjust the player's points based on how good/bad the opponent's defense is.
-    """
-    # How much better/worse this defense is vs league average
-    drtg_diff = opp_drtg - league_avg_drtg
+st.markdown('<hr class="court-divider">', unsafe_allow_html=True)
 
-    # Player's share of their team's points
-    player_share = player_ppg / team_ppg
+# ── Inputs ─────────────────────────────────────────────────────────────────────
+col1, col2 = st.columns(2)
 
-    # Player gets that share of the DRtg difference
-    adjustment = player_share * drtg_diff
+with col1:
+    st.markdown("### Player")
+    player_list = []
+    with st.spinner("Loading player list…"):
+        try:
+            player_list = get_player_list()
+        except Exception:
+            pass
 
-    return adjustment
-
-
-def location_adjustment(location):
-    """Home adds +1 point, away subtracts 1 point."""
-    if location.upper() == "H":
-        return 1.0
+    if player_list:
+        player = st.selectbox("Select Player", player_list, index=None, placeholder="Search player…")
     else:
-        return -1.0
+        player = st.text_input("Player Name (exact)", placeholder="e.g. Nikola Jokić")
 
+    player_team = st.selectbox("Player's Team", ALL_ABBREVS, index=None, placeholder="Select team…")
 
-def main():
-    print("NBA Points Predictor\n")
+with col2:
+    st.markdown("### Matchup")
+    opponent = st.selectbox("Opponent Team", ALL_ABBREVS, index=None, placeholder="Select opponent…")
+    location = st.radio("Game Location", ["Home 🏠", "Away ✈️"], horizontal=True)
 
-    player = input("Enter Player Name (exact as on Basketball-Reference): ")
-    player_team = input("Enter Player's Team ABBREV (e.g. MIN, BOS, OKC): ")
-    opponent = input("Enter Opponent Team ABBREV or Name (e.g. NOP, LAL, MIA, NOLA): ")
-    loc = input("Home (H) or Away (A): ")
+st.markdown('<hr class="court-divider">', unsafe_allow_html=True)
 
-    # Base player scoring
-    ppg = playerPPG(player)
+# ── Predict button ─────────────────────────────────────────────────────────────
+run = st.button("PREDICT POINTS")
 
-    # Team and defense context
-    team_ppg = teamPPG(player_team)
-    opp_drtg = opponentDRtg(opponent)
-    league_drtg = leagueAvgDRtg()
+if run:
+    if not player or not player_team or not opponent:
+        st.warning("Please fill in all fields before predicting.")
+    else:
+        is_home = location.startswith("Home")
+        with st.spinner("Crunching numbers from Basketball-Reference…"):
+            try:
+                ppg      = player_ppg(player)
+                t_ppg    = team_ppg(player_team)
+                opp_drtg = opponent_drtg(opponent)
+                lg_drtg  = league_avg_drtg()
 
-    # Adjustments needed
-    adj = scoringAdj(ppg, team_ppg, opp_drtg, league_drtg)
-    loc_adj = location_adjustment(loc)
+                def_adj  = scoring_adj(ppg, t_ppg, opp_drtg, lg_drtg)
+                loc_adj  = location_adj(is_home)
+                predicted = ppg + def_adj + loc_adj
 
-    # Final prediction
-    prediction = ppg + adj + loc_adj
+                def fmt_signed(v):
+                    sign  = "+" if v >= 0 else ""
+                    klass = "pos" if v >= 0 else "neg"
+                    return f'<span class="{klass}">{sign}{v:.2f}</span>'
 
-    print("--- Result ---")
-    print("Base PPG:", round(ppg, 2))
-    print("Defensive Adjustment:", round(adj, 2))
-    print("Home/Away Adjustment:", round(loc_adj, 2))
-    print("Predicted Points:", (round(prediction,0)))
+                opp_full   = ABBREV_TO_TEAM.get(opponent.upper(), opponent)
+                team_full  = ABBREV_TO_TEAM.get(player_team.upper(), player_team)
+                loc_label  = "Home" if is_home else "Away"
 
+                st.markdown(f"""
+                <div class="result-card">
+                    <div class="big-number">{round(predicted)}</div>
+                    <div class="big-label">Predicted Points — {player} vs {opp_full} ({loc_label})</div>
 
-if __name__ == "__main__":
-    main()
+                    <div class="breakdown-row">
+                        <span class="label">Base PPG</span>
+                        <span class="val">{ppg:.1f}</span>
+                    </div>
+                    <div class="breakdown-row">
+                        <span class="label">Defensive Adjustment <small>({opp_full} DRtg: {opp_drtg:.1f} | League: {lg_drtg:.1f})</small></span>
+                        <span class="val">{fmt_signed(def_adj)}</span>
+                    </div>
+                    <div class="breakdown-row">
+                        <span class="label">Home / Away Adjustment</span>
+                        <span class="val">{fmt_signed(loc_adj)}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            except ValueError as e:
+                st.error(str(e))
+            except Exception as e:
+                st.error(f"Something went wrong: {e}")
+
+# ── Footer info ────────────────────────────────────────────────────────────────
+st.markdown("""
+<div class="info-box">
+    <strong>How it works:</strong> Base PPG is adjusted by the opponent's Defensive Rating relative to the league average,
+    weighted by the player's scoring share of their team's output. A +1 / −1 home/away modifier is then applied.
+    Data is fetched live from Basketball-Reference.
+</div>
+""", unsafe_allow_html=True)
