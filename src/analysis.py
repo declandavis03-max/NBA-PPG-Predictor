@@ -5,7 +5,7 @@ Original logic by Declan Davis (@declandavis03-max)
 
 import streamlit as st
 import pandas as pd
-pip install lxml 
+
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
