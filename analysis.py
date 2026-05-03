@@ -2,7 +2,8 @@
 NBA Points Predictor — Streamlit App
 Original logic by Declan Davis (@declandavis03-max)
 """
-import urllib.request
+
+import requests
 import streamlit as st
 import pandas as pd
 
@@ -127,11 +128,16 @@ TEAM_ABBREVIATIONS = {
 ABBREV_TO_TEAM = {v: k for k, v in TEAM_ABBREVIATIONS.items()}
 ALL_ABBREVS    = sorted(TEAM_ABBREVIATIONS.values())
 
-# ── HTML fetcher (no lxml/html5lib needed) ─────────────────────────────────────
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+}
+
+# ── HTML fetcher ───────────────────────────────────────────────────────────────
 def fetch_html(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req) as r:
-        return r.read()
+    r = requests.get(url, headers=HEADERS, timeout=15)
+    return r.content
 
 # ── Cached data fetchers ───────────────────────────────────────────────────────
 @st.cache_data(show_spinner=False)
