@@ -34,10 +34,19 @@ h2, h3 { font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; color: #f77
 
 SEASON = "2025-26"
 
-# Build abbrev lookups from nba_api static data
 _all_teams = nba_teams.get_teams()
 ABBREV_TO_FULL = {t["abbreviation"]: t["full_name"] for t in _all_teams}
 ALL_ABBREVS = sorted(ABBREV_TO_FULL.keys())
+
+def match_team(df, team_abbrev):
+    """Try TEAM_ABBREVIATION first, fall back to TEAM_NAME."""
+    abbrev = team_abbrev.upper()
+    if "TEAM_ABBREVIATION" in df.columns:
+        row = df[df["TEAM_ABBREVIATION"] == abbrev]
+        if len(row) > 0:
+            return row
+    full = ABBREV_TO_FULL.get(abbrev, abbrev)
+    return df[df["TEAM_NAME"] == full]
 
 @st.cache_data(show_spinner=False)
 def fetch_player_stats():
@@ -46,17 +55,10 @@ def fetch_player_stats():
     ).get_data_frames()[0]
 
 @st.cache_data(show_spinner=False)
-def fetch_team_offense():
+def fetch_team_stats():
+    # Single call — gives us PTS (offense) and PLUS_MINUS (net rating proxy)
     return leaguedashteamstats.LeagueDashTeamStats(
         season=SEASON, per_mode_detailed="PerGame"
-    ).get_data_frames()[0]
-
-@st.cache_data(show_spinner=False)
-def fetch_team_opponent():
-    return leaguedashteamstats.LeagueDashTeamStats(
-        season=SEASON,
-        per_mode_detailed="PerGame",
-        measure_type_detailed_defense="Opponent"
     ).get_data_frames()[0]
 
 @st.cache_data(show_spinner=False)
@@ -72,28 +74,30 @@ def get_player_ppg(player_name):
     return float(row["PTS"].values[0])
 
 def get_team_ppg(team_abbrev):
-    df = fetch_team_offense()
-    # Match on TEAM_ABBREVIATION column
-    row = df[df["TEAM_ABBREVIATION"] == team_abbrev.upper()] if "TEAM_ABBREVIATION" in df.columns \
-          else df[df["TEAM_NAME"] == ABBREV_TO_FULL.get(team_abbrev.upper(), team_abbrev)]
+    df = fetch_team_stats()
+    row = match_team(df, team_abbrev)
     if len(row) == 0:
         raise ValueError(f"Team '{team_abbrev}' not found.")
     return float(row["PTS"].values[0])
 
-def get_opp_pts_allowed(team_abbrev):
-    df = fetch_team_opponent()
-    row = df[df["TEAM_ABBREVIATION"] == team_abbrev.upper()] if "TEAM_ABBREVIATION" in df.columns \
-          else df[df["TEAM_NAME"] == ABBREV_TO_FULL.get(team_abbrev.upper(), team_abbrev)]
+def get_team_plus_minus(team_abbrev):
+    """PLUS_MINUS = net points per game. Negative = bad defense."""
+    df = fetch_team_stats()
+    row = match_team(df, team_abbrev)
     if len(row) == 0:
-        raise ValueError(f"Team '{team_abbrev}' not found in opponent table.")
-    return float(row["PTS"].values[0])
+        raise ValueError(f"Team '{team_abbrev}' not found.")
+    return float(row["PLUS_MINUS"].values[0])
 
-def get_league_avg_pts_allowed():
-    df = fetch_team_opponent()
-    return float(df["PTS"].mean())
+def get_league_avg_plus_minus():
+    df = fetch_team_stats()
+    return float(df["PLUS_MINUS"].mean())  # Always ~0 since it's net
 
-def scoring_adj(ppg, t_ppg, opp_allowed, lg_avg):
-    return (ppg / t_ppg) * (opp_allowed - lg_avg)
+def scoring_adj(ppg, t_ppg, opp_pm, lg_pm):
+    # Negative opp PLUS_MINUS = worse defense = more points for opponent
+    # We flip the sign so bad defense = positive adjustment for scorer
+    pm_diff = lg_pm - opp_pm
+    share = ppg / t_ppg
+    return share * pm_diff
 
 def location_adj(is_home):
     return 1.0 if is_home else -1.0
@@ -134,13 +138,13 @@ if run:
         is_home = location.startswith("Home")
         with st.spinner("Crunching numbers from NBA.com…"):
             try:
-                ppg         = get_player_ppg(player)
-                t_ppg       = get_team_ppg(player_team)
-                opp_allowed = get_opp_pts_allowed(opponent)
-                lg_avg      = get_league_avg_pts_allowed()
-                def_adj     = scoring_adj(ppg, t_ppg, opp_allowed, lg_avg)
-                loc_adj     = location_adj(is_home)
-                predicted   = ppg + def_adj + loc_adj
+                ppg      = get_player_ppg(player)
+                t_ppg    = get_team_ppg(player_team)
+                opp_pm   = get_team_plus_minus(opponent)
+                lg_pm    = get_league_avg_plus_minus()
+                def_adj  = scoring_adj(ppg, t_ppg, opp_pm, lg_pm)
+                loc_adj  = location_adj(is_home)
+                predicted = ppg + def_adj + loc_adj
 
                 def fmt_signed(v):
                     sign  = "+" if v >= 0 else ""
@@ -159,7 +163,7 @@ if run:
                         <span class="val">{ppg:.1f}</span>
                     </div>
                     <div class="breakdown-row">
-                        <span class="label">Defensive Adjustment <small>({opp_full} allows {opp_allowed:.1f} | League avg: {lg_avg:.1f})</small></span>
+                        <span class="label">Defensive Adjustment <small>({opp_full} Net Rating: {opp_pm:+.1f})</small></span>
                         <span class="val">{fmt_signed(def_adj)}</span>
                     </div>
                     <div class="breakdown-row">
@@ -176,7 +180,7 @@ if run:
 
 st.markdown("""
 <div class="info-box">
-    <strong>How it works:</strong> Base PPG is adjusted by the opponent's points allowed per game relative to the league average,
+    <strong>How it works:</strong> Base PPG is adjusted based on the opponent's net rating (PLUS_MINUS),
     weighted by the player's scoring share of their team's output. A +1 / −1 home/away modifier is applied.
     Data is fetched live from NBA.com.
 </div>
