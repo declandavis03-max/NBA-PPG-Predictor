@@ -88,7 +88,7 @@ def get_team_ppg(team_abbrev):
     if len(row) == 0:
         raise ValueError(f"Team '{team_abbrev}' not found.")
     # Find whichever points column exists
-    pts_col = next((c for c in ["PTS", "PTS_PG", "POINTS"] if c in df.columns), None)
+    pts_col = next((c for c in ["OPP_PTS", "PTS", "PTS_PG", "POINTS"] if c in df.columns), None)
     if pts_col is None:
         raise ValueError(f"No PTS column found. Columns: {list(df.columns)}")
     return float(row[pts_col].values[0])
@@ -98,14 +98,14 @@ def get_opp_pts_allowed(team_abbrev):
     row = match_team(df, team_abbrev)
     if len(row) == 0:
         raise ValueError(f"Team '{team_abbrev}' not found in defense table.")
-    pts_col = next((c for c in ["PTS", "PTS_PG", "POINTS"] if c in df.columns), None)
+    pts_col = next((c for c in ["OPP_PTS", "PTS", "PTS_PG", "POINTS"] if c in df.columns), None)
     if pts_col is None:
         raise ValueError(f"No PTS column in defense table. Columns: {list(df.columns)}")
     return float(row[pts_col].values[0])
 
 def get_league_avg_pts_allowed():
     df = fetch_team_defense()
-    pts_col = next((c for c in ["PTS", "PTS_PG", "POINTS"] if c in df.columns), None)
+    pts_col = next((c for c in ["OPP_PTS", "PTS", "PTS_PG", "POINTS"] if c in df.columns), None)
     if pts_col is None:
         raise ValueError(f"No PTS column in defense table. Columns: {list(df.columns)}")
     return float(df[pts_col].mean())
